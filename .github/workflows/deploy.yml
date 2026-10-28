@@ -28,6 +28,11 @@ jobs:
       - run: npx tsc -b
       # Project pages are served from /<repo>/, so assets and the service worker need that base path.
       - run: npx vite build --base=/${{ github.event.repository.name }}/
+        env:
+          # Repository variables (Settings → Secrets and variables → Actions → Variables).
+          # The anon/publishable key is meant to be public; row-level security protects the data.
+          VITE_SUPABASE_URL: ${{ vars.SUPABASE_URL }}
+          VITE_SUPABASE_ANON_KEY: ${{ vars.SUPABASE_ANON_KEY }}
       - uses: actions/upload-pages-artifact@v3
         with:
           path: dist

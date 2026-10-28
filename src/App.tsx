@@ -4,6 +4,7 @@ import { loadAll, updateSettings } from './db';
 import { addDays, todayISO, weekStartOf } from './lib/dates';
 import { Scorer, canEdit } from './lib/scoring';
 import type { ISODate } from './lib/types';
+import type { Account } from './AuthGate';
 import { Icon } from './components/ui';
 import { TodayView } from './components/TodayView';
 import { WeekView } from './components/WeekView';
@@ -25,7 +26,7 @@ function useToday(): ISODate {
   return today;
 }
 
-export default function App() {
+export default function App({ account }: { account: Account }) {
   const data = useLiveQuery(loadAll, []);
   const today = useToday();
   const scorer = useMemo(() => (data ? new Scorer(data) : null), [data]);
@@ -93,7 +94,7 @@ export default function App() {
       </nav>
 
       {sheet && <HabitSheet data={data} scorer={scorer} today={today} habitId={sheet.habitId} onClose={() => setSheet(null)} />}
-      {settingsOpen && <SettingsSheet settings={data.settings} onClose={() => setSettingsOpen(false)} />}
+      {settingsOpen && <SettingsSheet settings={data.settings} account={account} onClose={() => setSettingsOpen(false)} />}
     </div>
   );
 }

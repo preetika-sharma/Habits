@@ -325,3 +325,26 @@ h1, h2, p { margin: 0; }
 .danger-zone .row .btn { flex: 1; }
 
 .loading { min-height: 100dvh; }
+
+/* Sign-in */
+.login { min-height: 100dvh; display: flex; align-items: center; justify-content: center; padding: 24px 16px; }
+.login-card { width: 100%; max-width: 420px; padding: 28px 22px; display: flex; flex-direction: column; gap: 20px; border-radius: 24px; }
+.login-card h1 { font-size: 26px; font-weight: 800; letter-spacing: -0.02em; margin-bottom: 6px; }
+.login-card p { line-height: 1.5; }
+.login-logo { border-radius: 14px; }
+.field input[type="email"], .field .code-input {
+  height: 50px; border-radius: 14px; border: 1.5px solid var(--control); background: var(--surface);
+  padding: 0 14px; font-size: 16px; font-weight: 600;
+}
+.field .code-input { font-size: 22px; letter-spacing: 0.3em; font-variant-numeric: tabular-nums; }
+.row.center { justify-content: center; }
+.link-btn:disabled { opacity: 0.5; }
+.btn:disabled { opacity: 0.5; }
+code { font-size: 0.9em; background: var(--surface-soft); padding: 1px 5px; border-radius: 5px; }
+
+/* Account */
+.account { display: flex; align-items: center; gap: 12px; padding: 12px 14px; }
+.ellipsis { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.btn.small { min-height: 40px; padding: 0 12px; font-size: 13.5px; }
+.sync-status { font-size: 12.5px; font-weight: 600; color: var(--muted); }
+.sync-status.error { color: var(--danger); }
