@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest';
-import { byOrder, moveInOrder } from './order';
+import { byOrder, moveInOrder, repairOrder } from './order';
 
 const ids = (xs: { id: string }[]) => xs.map((x) => x.id);
 
@@ -29,5 +29,27 @@ describe('moveInOrder', () => {
   it('only returns items whose position actually changes', () => {
     const list = [{ id: 'a', sortOrder: 0 }, { id: 'b', sortOrder: 1 }, { id: 'c', sortOrder: 2 }];
     expect(moveInOrder(list, 'c', -1)!.map((c) => [c.item.id, c.sortOrder])).toEqual([['c', 1], ['b', 2]]);
+  });
+});
+
+describe('repairOrder', () => {
+  it('does nothing when positions are already unique', () => {
+    expect(repairOrder([{ id: 'a', sortOrder: 5 }, { id: 'b', sortOrder: 9 }])).toEqual([]);
+  });
+
+  it('renumbers duplicates while keeping the visible order', () => {
+    // "No snacking" was added on a phone before sign-in and collided with a habit already in the account.
+    const list = [
+      { id: 'protein', sortOrder: 1 },
+      { id: 'snack', sortOrder: 1 },
+      { id: 'steps', sortOrder: 2 },
+    ];
+    const shown = ids([...list].sort(byOrder));
+    const changes = repairOrder(list);
+    const after = list.map((x) => ({ ...x, sortOrder: changes.find((c) => c.item.id === x.id)?.sortOrder ?? x.sortOrder }));
+    expect(ids([...after].sort(byOrder))).toEqual(shown);
+    expect(new Set(after.map((x) => x.sortOrder)).size).toBe(3);
+    // Running it again finds nothing to do, so devices don't keep rewriting each other.
+    expect(repairOrder(after)).toEqual([]);
   });
 });

@@ -1,5 +1,5 @@
 import { useSyncExternalStore } from 'react';
-import { claimLocalData, dataTable, db, getMeta, onLocalChange, setMeta } from './db';
+import { claimLocalData, dataTable, db, getMeta, onLocalChange, repairHabitOrder, setMeta } from './db';
 import { collapseOutbox, planPull, pullCursor, recordKey, type RemoteRecord } from './lib/sync';
 import { supabase } from './supabase';
 
@@ -85,6 +85,9 @@ class SyncEngine {
       this.set({ phase: 'syncing' });
       await this.push(userId);
       await this.pull();
+      // Habits from other devices can arrive sharing a position; repair it here. Any fix is
+      // queued like a normal edit and goes out on the next (scheduled) push.
+      await repairHabitOrder();
       const at = new Date().toISOString();
       await setMeta('lastSyncedAt', at);
       this.set({ phase: 'idle', lastSyncedAt: at, error: null, pending: await db.outbox.count() });

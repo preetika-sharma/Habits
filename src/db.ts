@@ -1,6 +1,6 @@
 import Dexie, { type Table } from 'dexie';
 import { weekStartOf } from './lib/dates';
-import { moveInOrder } from './lib/order';
+import { moveInOrder, repairOrder } from './lib/order';
 import type { Kind, OutboxEntry } from './lib/sync';
 import {
   checkInId, DEFAULT_SETTINGS,
@@ -107,10 +107,12 @@ export interface HabitInput {
 export async function createHabit(input: HabitInput, today: ISODate): Promise<string> {
   const id = uuid();
   await mutate(async () => {
+    // Use the creation time as the position: it puts the habit at the end, and unlike
+    // "last + 1" it can't collide with a habit added on another device before syncing.
     const last = await db.habits.orderBy('sortOrder').last();
     await put<Habit>('habits', {
       id, name: input.name.trim(), color: input.color, type: input.type,
-      sortOrder: (last?.sortOrder ?? 0) + 1, createdOn: today, archivedOn: null, sourceTemplateHabitId: null,
+      sortOrder: Math.max(Date.now(), (last?.sortOrder ?? 0) + 1), createdOn: today, archivedOn: null, sourceTemplateHabitId: null,
     });
     for (const [i, s] of input.subtasks.entries()) {
       await put<Subtask>('subtasks', { id: uuid(), habitId: id, name: s.name.trim(), sortOrder: i, createdOn: today, archivedOn: null });
@@ -174,6 +176,19 @@ export async function moveHabit(id: string, direction: -1 | 1, today: ISODate): 
       await put<Habit>('habits', { ...item, sortOrder });
     }
   });
+}
+
+/**
+ * Renumbers habits if any share a position (older data, or habits uploaded from a
+ * device on first sign-in). Writes nothing, and so triggers no sync, when all are unique.
+ */
+export async function repairHabitOrder(): Promise<number> {
+  const changes = repairOrder(await db.habits.toArray());
+  if (!changes.length) return 0;
+  await mutate(async () => {
+    for (const { item, sortOrder } of changes) await put<Habit>('habits', { ...item, sortOrder });
+  });
+  return changes.length;
 }
 
 export async function updateSettings(changes: Partial<Omit<Settings, 'id'>>): Promise<void> {

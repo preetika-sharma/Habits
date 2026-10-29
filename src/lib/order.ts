@@ -21,3 +21,15 @@ export function moveInOrder<T extends Ordered>(list: T[], id: string, direction:
     .map((item, k) => ({ item, sortOrder: k }))
     .filter(({ item, sortOrder }) => item.sortOrder !== sortOrder);
 }
+
+/**
+ * If any items share a sortOrder, renumbers the whole list 0..n-1 in its current
+ * display order. Returns the changes, or [] when every sortOrder is already unique.
+ * Deterministic (byOrder breaks ties by id), so every device makes the same repair.
+ */
+export function repairOrder<T extends Ordered>(list: T[]): { item: T; sortOrder: number }[] {
+  if (new Set(list.map((x) => x.sortOrder)).size === list.length) return [];
+  return [...list].sort(byOrder)
+    .map((item, k) => ({ item, sortOrder: k }))
+    .filter(({ item, sortOrder }) => item.sortOrder !== sortOrder);
+}
