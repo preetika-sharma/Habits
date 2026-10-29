@@ -77,7 +77,9 @@ function DayPage({ scorer, today, date, onAdd, onEdit, onSettings, go, canGo, in
   const dayWord = isToday ? 'today' : formatDay(date, { weekday: 'short' });
   const prev = addDays(date, -1);
   const next = addDays(date, 1);
-  const pageNo = Math.round((parseISO(date).getTime() - new Date(parseISO(date).getFullYear(), 0, 1).getTime()) / 864e5) + 1;
+  const year = parseISO(date).getFullYear();
+  const dayOfYear = Math.round((parseISO(date).getTime() - new Date(year, 0, 1).getTime()) / 864e5) + 1;
+  const daysInYear = Math.round((new Date(year + 1, 0, 1).getTime() - new Date(year, 0, 1).getTime()) / 864e5);
   const tab = inert ? -1 : undefined;
 
   return (
@@ -190,7 +192,7 @@ function DayPage({ scorer, today, date, onAdd, onEdit, onSettings, go, canGo, in
         </section>
       )}
 
-      <footer className="page-no script" aria-hidden="true">~ {pageNo} ~</footer>
+      <footer className="page-no">day {dayOfYear} of {daysInYear}</footer>
     </article>
   );
 }

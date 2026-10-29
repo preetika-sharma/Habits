@@ -410,25 +410,22 @@ code { font-size: 0.92em; background: var(--accent-wash); padding: 1px 5px; bord
 .sync-status { font-size: 12px; color: var(--ink-soft); }
 .sync-status.error { color: var(--danger); }
 
-/* ---------- Cover (sign-in): a black notebook ---------- */
+/* ---------- Sign-in: the first page of the journal ---------- */
 .login { min-height: 100dvh; display: flex; align-items: center; justify-content: center; padding: 24px 14px; }
 .cover {
-  width: 100%; max-width: 440px; padding: 36px 24px 26px 30px; border-radius: 4px 14px 14px 4px;
-  background: #161616; box-shadow: var(--shadow), 3px 3px 0 -1px #F4F4F2, 6px 6px 0 -2px #E4E4E1;
-  display: flex; flex-direction: column; gap: 24px; position: relative;
+  width: 100%; max-width: 440px; padding: 34px 24px 28px; border-radius: 3px 10px 10px 3px;
+  background-color: var(--paper);
+  background-image: radial-gradient(circle, var(--dot) 0.9px, transparent 1.3px);
+  background-size: 18px 18px; background-position: 9px 9px;
+  box-shadow: var(--shadow), 2px 2px 0 -1px var(--paper-edge), 4px 4px 0 -2px var(--paper-edge);
+  display: flex; flex-direction: column; gap: 22px;
 }
-.cover::after { content: ''; position: absolute; top: 0; bottom: 0; right: 36px; width: 8px; background: #000; opacity: 0.9; }
-.cover-label {
-  align-self: center; background: #FFFFFF; padding: 8px 26px 10px; border: 1.2px solid #161616;
-  display: flex; flex-direction: column; align-items: center; color: #161616; position: relative; z-index: 1;
-}
-.cover-label .script { font-family: var(--brush); font-weight: 400; font-size: 54px; line-height: 1; text-transform: lowercase; }
-.cover-label .typed { font-family: var(--caps); font-weight: 700; font-size: 18px; letter-spacing: 0.22em; text-transform: uppercase; color: #161616; }
-.login-card {
-  position: relative; z-index: 1; background-color: var(--paper); border-radius: 2px; padding: 22px 20px;
-  background-image: radial-gradient(circle, var(--dot) 0.9px, transparent 1.3px); background-size: 18px 18px;
-}
-.login-card h1 { font-family: var(--brush); font-weight: 400; font-size: 42px; line-height: 1; margin-bottom: 10px; text-transform: lowercase; }
+/* Title block like the top of a bullet-journal page: caps line over brush script, ruled underneath. */
+.cover-label { display: flex; flex-direction: column-reverse; align-items: center; padding-bottom: 14px; border-bottom: 1.2px solid var(--ink); color: var(--ink); }
+.cover-label .script { font-family: var(--brush); font-weight: 400; font-size: 60px; line-height: 1; text-transform: lowercase; }
+.cover-label .typed { font-family: var(--caps); font-weight: 700; font-size: 20px; letter-spacing: 0.22em; text-transform: uppercase; color: var(--ink); }
+.login-card { padding: 0; }
+.login-card h1 { font-size: 16px; letter-spacing: 0.22em; text-transform: lowercase; margin-bottom: 8px; }
 .login-card p { line-height: 1.6; font-size: 13.5px; }
 
 @media (prefers-reduced-motion: reduce) {
