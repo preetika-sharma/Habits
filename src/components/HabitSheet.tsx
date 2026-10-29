@@ -3,7 +3,7 @@ import { archiveHabit, createHabit, deleteHabit, moveHabit, updateHabit, type Ha
 import { weekStartOf } from '../lib/dates';
 import type { Scorer } from '../lib/scoring';
 import type { AppData, HabitType, ISODate } from '../lib/types';
-import { COLORS, HandBox, Highlight, Icon, Sheet, highlighter } from './ui';
+import { COLORS, HandBox, Highlight, Icon, Sheet } from './ui';
 
 interface Props {
   data: AppData;
@@ -17,7 +17,7 @@ export function HabitSheet({ data, scorer, today, habitId, onClose }: Props) {
   const existing = habitId ? data.habits.find((h) => h.id === habitId) : undefined;
   const [type, setType] = useState<HabitType>(existing?.type ?? 'daily');
   const [name, setName] = useState(existing?.name ?? '');
-  const [color, setColor] = useState(existing ? highlighter(existing.color) : COLORS[0].hex);
+  const color = existing?.color ?? COLORS[0].hex;
   const [target, setTarget] = useState(existing ? scorer.targetFor(existing.id, weekStartOf(today)) : 3);
   const [subs, setSubs] = useState<{ id?: string; name: string }[]>(
     existing ? scorer.activeSubtasks(existing.id, today).map((s) => ({ id: s.id, name: s.name })) : [],
@@ -103,18 +103,6 @@ export function HabitSheet({ data, scorer, today, habitId, onClose }: Props) {
             </div>
           </div>
         )}
-
-        <fieldset className="field">
-          <legend>Colour</legend>
-          <div className="swatches">
-            {COLORS.map((c) => (
-              <button key={c.hex} type="button" className={`swatch${color === c.hex ? ' on' : ''}`} aria-label={c.name}
-                aria-pressed={color === c.hex} onClick={() => setColor(c.hex)}>
-                <span style={{ background: c.hex }} />
-              </button>
-            ))}
-          </div>
-        </fieldset>
 
         <div className="field">
           <div className="field-head"><span className="label-text">Steps (optional)</span><span className="muted">All must be done</span></div>

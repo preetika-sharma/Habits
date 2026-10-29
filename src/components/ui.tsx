@@ -89,8 +89,8 @@ export function HandBox({ checked, small = false }: { checked: boolean; small?: 
   const size = small ? 20 : 26;
   return (
     <svg width={size} height={size} viewBox="0 0 24 24" fill="none" aria-hidden="true" className={`handbox${checked ? ' on' : ''}`}>
-      <path d={BOX} stroke="var(--ink)" strokeWidth={small ? 1.6 : 1.8} strokeLinejoin="round" />
-      {checked && <path className="tick" d={TICK} pathLength={1} stroke="var(--pen)" strokeWidth="2.8" strokeLinecap="round" strokeLinejoin="round" />}
+      <path d={BOX} stroke="var(--box)" strokeWidth={small ? 1.3 : 1.5} strokeLinejoin="round" />
+      {checked && <path className="tick" d={TICK} pathLength={1} stroke="var(--ink)" strokeWidth="2.6" strokeLinecap="round" strokeLinejoin="round" />}
     </svg>
   );
 }
