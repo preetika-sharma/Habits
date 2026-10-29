@@ -1,9 +1,9 @@
-import { useState, type ReactNode } from 'react';
+import { useRef, useState, type CSSProperties, type ReactNode } from 'react';
 import { toggleCheck } from '../db';
-import { DAY_LETTERS, formatDay, isoWeek, weekDays, weekStartOf } from '../lib/dates';
+import { addDays, DAY_LETTERS, formatDay, isoWeek, parseISO, weekDays, weekStartOf } from '../lib/dates';
 import type { Scorer } from '../lib/scoring';
 import type { AppData, Habit, ISODate } from '../lib/types';
-import { CheckButton, Icon, Ring, StreakBadge, plural } from './ui';
+import { CheckButton, Flame, HandBox, Highlight, Icon, Ring, StreakBadge, highlighter, plural } from './ui';
 
 interface Props {
   data: AppData;
@@ -16,180 +16,234 @@ interface Props {
   onSettings: () => void;
 }
 
-export function TodayView({ scorer, today, selected, onSelect, onAdd, onEdit, onSettings }: Props) {
+const reducedMotion = () => window.matchMedia('(prefers-reduced-motion: reduce)').matches;
+
+/** Today is a journal page; other days this week are the pages around it. */
+export function TodayView(props: Props) {
+  const { today, selected, onSelect } = props;
+  const [turn, setTurn] = useState<{ from: ISODate; to: ISODate; dir: 1 | -1 } | null>(null);
+  const swipe = useRef<{ x: number; y: number } | null>(null);
+
+  const first = weekStartOf(today);
+  const canGo = (d: ISODate) => d >= first && d <= today;
+
+  const go = (d: ISODate) => {
+    if (d === selected || !canGo(d)) return;
+    if (!reducedMotion()) setTurn({ from: selected, to: d, dir: d > selected ? 1 : -1 });
+    onSelect(d);
+  };
+
+  // Forward: the old page lifts away to the left, revealing the new one beneath.
+  // Backward: the new page swings back in from the left over the old one.
+  const base = turn ? (turn.dir === 1 ? turn.to : turn.from) : selected;
+  const overlay = turn ? (turn.dir === 1 ? turn.from : turn.to) : null;
+
+  return (
+    <div className="page-stack"
+      onPointerDown={(e) => { swipe.current = { x: e.clientX, y: e.clientY }; }}
+      onPointerUp={(e) => {
+        const s = swipe.current;
+        swipe.current = null;
+        if (!s) return;
+        const dx = e.clientX - s.x;
+        const dy = e.clientY - s.y;
+        if (Math.abs(dx) > 60 && Math.abs(dx) > Math.abs(dy) * 1.5) go(addDays(selected, dx < 0 ? 1 : -1));
+      }}>
+      <DayPage {...props} date={base} go={go} canGo={canGo} />
+      {turn && overlay && (
+        <div className={`turning ${turn.dir === 1 ? 'forward' : 'backward'}`} aria-hidden="true" onAnimationEnd={() => setTurn(null)}>
+          <DayPage {...props} date={overlay} go={go} canGo={canGo} inert />
+        </div>
+      )}
+    </div>
+  );
+}
+
+function DayPage({ scorer, today, date, onAdd, onEdit, onSettings, go, canGo, inert = false }: Props & {
+  date: ISODate; go: (d: ISODate) => void; canGo: (d: ISODate) => boolean; inert?: boolean;
+}) {
   const [open, setOpen] = useState<Record<string, boolean>>({});
   const toggleOpen = (id: string) => setOpen((o) => ({ ...o, [id]: !o[id] }));
 
   const ws = weekStartOf(today);
   const days = weekDays(ws);
-  const daily = scorer.habitsOn(selected, 'daily');
-  const weekly = scorer.habitsOn(selected, 'weekly');
-  const dailyDone = daily.filter((h) => scorer.isDone(h, selected)).length;
-  const score = scorer.dailyScore(selected);
+  const daily = scorer.habitsOn(date, 'daily');
+  const weekly = scorer.habitsOn(date, 'weekly');
+  const dailyDone = daily.filter((h) => scorer.isDone(h, date)).length;
+  const score = scorer.dailyScore(date);
   const weeklyHit = weekly.filter((h) => scorer.weeklyHit(h, ws)).length;
   const daysLeft = 7 - days.indexOf(today);
-  const isToday = selected === today;
-  const dayWord = isToday ? 'today' : formatDay(selected, { weekday: 'short' });
+  const isToday = date === today;
+  const dayWord = isToday ? 'today' : formatDay(date, { weekday: 'short' });
+  const prev = addDays(date, -1);
+  const next = addDays(date, 1);
+  const pageNo = Math.round((parseISO(date).getTime() - new Date(parseISO(date).getFullYear(), 0, 1).getTime()) / 864e5) + 1;
+  const tab = inert ? -1 : undefined;
 
   return (
-    <div className="view">
-      <header className="view-head">
-        <div>
-          <div className="eyebrow">{formatDay(selected, { weekday: 'short', month: 'short', day: 'numeric' })} · Week {isoWeek(selected)}</div>
-          <h1>{isToday ? 'Today' : formatDay(selected, { weekday: 'long' })}</h1>
+    <article className="journal-page day-page" aria-label={formatDay(date, { weekday: 'long', month: 'long', day: 'numeric' })}>
+      <header className="page-head">
+        <button type="button" className="flip-btn" aria-label="Previous day" disabled={!canGo(prev)} tabIndex={tab} onClick={() => go(prev)}>
+          <Icon name="chevronLeft" size={22} stroke={2.2} />
+        </button>
+        <div className="page-date">
+          <h1 className="script">{isToday ? 'Today' : formatDay(date, { weekday: 'long' })}</h1>
+          <div className="typed small">{formatDay(date, { weekday: 'short', month: 'short', day: 'numeric' })} · week {isoWeek(date)}</div>
         </div>
-        <div className="head-actions">
-          <span className="streak-chip" title="Days in a row at your daily target">
-            <Icon name="flame" size={16} stroke={2.2} />{plural(scorer.dayStreak(today), 'day')}
-          </span>
-          <button type="button" className="icon-btn" aria-label="Settings" onClick={onSettings}><Icon name="settings" /></button>
-          <button type="button" className="icon-btn primary" aria-label="Add habit" onClick={onAdd}><Icon name="plus" stroke={2.4} /></button>
-        </div>
+        <button type="button" className="flip-btn" aria-label="Next day" disabled={!canGo(next)} tabIndex={tab} onClick={() => go(next)}>
+          <Icon name="chevronRight" size={22} stroke={2.2} />
+        </button>
       </header>
 
-      <div className="day-strip card" role="group" aria-label="Days this week">
+      <div className="page-tools">
+        <span className="streak-note script" title="Days in a row at your daily target">
+          <Flame size={18} />{plural(scorer.dayStreak(today), 'day')} in a row
+        </span>
+        <span className="tool-row">
+          <button type="button" className="ink-btn" aria-label="Settings" tabIndex={tab} onClick={onSettings}><Icon name="settings" size={20} /></button>
+          <button type="button" className="ink-btn solid" aria-label="Add habit" tabIndex={tab} onClick={onAdd}><Icon name="plus" size={20} stroke={2.4} /></button>
+        </span>
+      </div>
+
+      <div className="day-strip" role="group" aria-label="Days this week">
         {days.map((d, i) => {
           const s = d <= today ? scorer.dailyScore(d) : null;
           const future = d > today;
           return (
-            <button key={d} type="button" className={`day${d === selected ? ' selected' : ''}`} disabled={future}
-              aria-pressed={d === selected} aria-label={`${formatDay(d, { weekday: 'long' })}${s !== null ? `, ${Math.round(s * 100)}%` : ''}`}
-              onClick={() => onSelect(d)}>
-              <span className="day-letter">{DAY_LETTERS[i]}</span>
-              <Ring value={s}><span className={future ? 'muted' : ''}>{formatDay(d, { day: 'numeric' })}</span></Ring>
-              <span className="day-pct">{s === null ? '–' : `${Math.round(s * 100)}%`}</span>
+            <button key={d} type="button" className={`day${d === date ? ' selected' : ''}`} disabled={future} tabIndex={tab}
+              aria-pressed={d === date} aria-label={`${formatDay(d, { weekday: 'long' })}${s !== null ? `, ${Math.round(s * 100)}%` : ''}`}
+              onClick={() => go(d)}>
+              <span className="day-letter typed">{DAY_LETTERS[i]}</span>
+              <Ring value={s}><span className="script">{formatDay(d, { day: 'numeric' })}</span></Ring>
             </button>
           );
         })}
       </div>
 
       {daily.length + weekly.length === 0 && (
-        <div className="empty card">
-          <h2>Start with one habit</h2>
-          <p>Add a daily habit like “Drink 3L water”, or a weekly target like “Run 3× a week”.</p>
-          <button type="button" className="btn primary" onClick={onAdd}><Icon name="plus" size={18} stroke={2.4} />Add a habit</button>
+        <div className="empty">
+          <h2 className="script">A fresh page!</h2>
+          <p className="typed">Add a daily habit like “Drink 3L water”, or a weekly target like “Run 3× a week”.</p>
+          <button type="button" className="btn primary" tabIndex={tab} onClick={onAdd}><Icon name="plus" size={18} stroke={2.4} />Add a habit</button>
         </div>
       )}
 
       {daily.length > 0 && (
         <section className="section">
           <div className="section-head">
-            <h2>Daily</h2>
-            <span>{dailyDone} of {daily.length} done{score !== null ? ` · ${Math.round(score * 100)}%` : ''}</span>
+            <h2 className="script underline">Daily</h2>
+            <span className="typed small">{dailyDone}/{daily.length} done{score !== null ? ` · ${Math.round(score * 100)}%` : ''}</span>
           </div>
-          {daily.map((h) => (
-            <HabitCard key={h.id} habit={h} scorer={scorer} date={selected} today={today} open={!!open[h.id]}
-              onToggleOpen={() => toggleOpen(h.id)} onEdit={() => onEdit(h.id)}
-              meta={<StreakBadge text={plural(scorer.dailyStreak(h, today), 'day')} />}
-              best={plural(scorer.bestDailyStreak(h, today), 'day')} />
-          ))}
+          <ul className="lines">
+            {daily.map((h) => (
+              <HabitLine key={h.id} habit={h} scorer={scorer} date={date} open={!!open[h.id]} tab={tab}
+                onToggleOpen={() => toggleOpen(h.id)} onEdit={() => onEdit(h.id)}
+                meta={<><StreakBadge text={plural(scorer.dailyStreak(h, today), 'day')} /><span className="faint">best {scorer.bestDailyStreak(h, today)}</span></>} />
+            ))}
+          </ul>
         </section>
       )}
 
       {weekly.length > 0 && (
         <section className="section">
           <div className="section-head">
-            <h2>Weekly targets</h2>
-            <span>{weeklyHit} of {weekly.length} hit</span>
+            <h2 className="script underline">This week’s targets</h2>
+            <span className="typed small">{weeklyHit}/{weekly.length} hit</span>
           </div>
-          {weekly.map((h) => {
-            const target = scorer.targetFor(h.id, ws);
-            const count = scorer.weeklyCount(h, ws);
-            const hit = count >= target;
-            const doneSel = scorer.isDone(h, selected);
-            const hasSubs = scorer.activeSubtasks(h.id, selected).length > 0;
-            return (
-              <div key={h.id} className="card weekly">
-                <div className="weekly-top">
-                  <button type="button" className="habit-name-btn" onClick={() => onEdit(h.id)}>
-                    <span className="habit-name"><span className="dot" style={{ background: h.color }} />{h.name}</span>
-                    <span className="habit-meta">{target}× a week · <StreakBadge text={plural(scorer.weeklyStreak(h, today), 'wk', 'wks')} /> <span className="faint">best {scorer.bestWeeklyStreak(h, today)}</span></span>
-                  </button>
-                  <div className="big-count">{count}<span> / {target}</span></div>
-                </div>
-                <div className="segs" role="img" aria-label={`${count} of ${target} this week`}>
-                  {Array.from({ length: Math.max(target, count) }, (_, i) => (
-                    <span key={i} className={i < count ? (i >= target ? 'seg bonus' : 'seg on') : 'seg'} />
-                  ))}
-                </div>
-                {hasSubs ? (
-                  <SubtaskBlock habit={h} scorer={scorer} date={selected} today={today} open={!!open[h.id]} onToggleOpen={() => toggleOpen(h.id)}
-                    status={<span className={hit ? 'status hit' : 'status'}>{statusText(hit, count, target, daysLeft)}</span>} />
-                ) : (
-                  <div className="weekly-bottom">
-                    <span className={hit ? 'status hit' : 'status'}>{statusText(hit, count, target, daysLeft)}</span>
-                    <button type="button" className={`pill${doneSel ? ' on' : ''}`} aria-pressed={doneSel}
-                      onClick={() => toggleCheck(h.id, '', selected)}>
-                      {doneSel && <Icon name="check" size={15} stroke={3} />}
-                      {doneSel ? `Done ${dayWord}` : `Check in ${dayWord}`}
+          <ul className="lines">
+            {weekly.map((h) => {
+              const target = scorer.targetFor(h.id, ws);
+              const count = scorer.weeklyCount(h, ws);
+              const hit = count >= target;
+              const doneSel = scorer.isDone(h, date);
+              const hasSubs = scorer.activeSubtasks(h.id, date).length > 0;
+              return (
+                <li key={h.id} className="weekly-line">
+                  <div className="weekly-top">
+                    <button type="button" className="habit-name-btn" tabIndex={tab} onClick={() => onEdit(h.id)}>
+                      <Highlight color={h.color} on={hit} className="habit-name">{h.name}</Highlight>
+                      <span className="habit-meta typed">{target}× a week · <StreakBadge text={plural(scorer.weeklyStreak(h, today), 'wk', 'wks')} /> <span className="faint">best {scorer.bestWeeklyStreak(h, today)}</span></span>
                     </button>
+                    <span className="tally script" aria-label={`${count} of ${target} this week`}>{count}<small>/{target}</small></span>
                   </div>
-                )}
-              </div>
-            );
-          })}
+                  <div className="tally-boxes" aria-hidden="true">
+                    {Array.from({ length: Math.max(target, count) }, (_, i) => (
+                      <span key={i} className={`tally-box${i < count ? ' on' : ''}${i >= target ? ' bonus' : ''}`}
+                        style={{ '--hl': highlighter(h.color) } as CSSProperties}>
+                        <HandBox checked={i < count} small />
+                      </span>
+                    ))}
+                    <span className={`status typed small${hit ? ' hit' : ''}`}>{statusText(hit, count, target, daysLeft)}</span>
+                  </div>
+                  {hasSubs ? (
+                    <SubtaskBlock habit={h} scorer={scorer} date={date} open={!!open[h.id]} tab={tab} onToggleOpen={() => toggleOpen(h.id)} />
+                  ) : (
+                    <button type="button" className={`stamp${doneSel ? ' on' : ''}`} aria-pressed={doneSel} tabIndex={tab}
+                      onClick={() => toggleCheck(h.id, '', date)}>
+                      {doneSel ? <><Icon name="check" size={16} stroke={2.6} />Done {dayWord}</> : <><Icon name="plus" size={16} stroke={2.4} />Log {dayWord}</>}
+                    </button>
+                  )}
+                </li>
+              );
+            })}
+          </ul>
         </section>
       )}
-    </div>
+
+      <footer className="page-no script" aria-hidden="true">~ {pageNo} ~</footer>
+    </article>
   );
 }
 
 function statusText(hit: boolean, count: number, target: number, daysLeft: number): string {
-  if (hit) return count > target ? `Target hit · +${count - target} bonus` : 'Target hit';
-  return `${target - count} more to go · ${plural(daysLeft, 'day')} left`;
+  if (hit) return count > target ? `hit! +${count - target} bonus` : 'target hit!';
+  return `${target - count} to go · ${plural(daysLeft, 'day')} left`;
 }
 
-interface CardProps {
-  habit: Habit;
-  scorer: Scorer;
-  date: ISODate;
-  today: ISODate;
-  open: boolean;
-  onToggleOpen: () => void;
-  onEdit: () => void;
-  meta: ReactNode;
-  best: string;
-}
-
-function HabitCard({ habit: h, scorer, date, today, open, onToggleOpen, onEdit, meta, best }: CardProps) {
+function HabitLine({ habit: h, scorer, date, open, tab, onToggleOpen, onEdit, meta }: {
+  habit: Habit; scorer: Scorer; date: ISODate; open: boolean; tab?: number;
+  onToggleOpen: () => void; onEdit: () => void; meta: ReactNode;
+}) {
   const { done, total } = scorer.subtaskProgress(h, date);
   const isDone = scorer.isDone(h, date);
   return (
-    <div className="card habit">
+    <li className="habit-line">
       <div className="habit-row">
         {total === 0 ? (
           <CheckButton checked={isDone} label={`${isDone ? 'Uncheck' : 'Check'} ${h.name}`} onClick={() => toggleCheck(h.id, '', date)} />
         ) : (
-          <span className="sub-ring" role="img" aria-label={`${done} of ${total} steps done`}>
-            <Ring value={done / total} size={30} stroke={4} full={isDone}>
-              <span className={isDone ? 'on-accent' : ''}>{isDone ? <Icon name="check" size={14} stroke={3} /> : `${done}/${total}`}</span>
-            </Ring>
+          <span className="step-count script" role="img" aria-label={`${done} of ${total} steps done`}>
+            {isDone ? <HandBox checked /> : <>{done}/{total}</>}
           </span>
         )}
-        <button type="button" className="habit-name-btn" onClick={onEdit}>
-          <span className="habit-name"><span className="dot" style={{ background: h.color }} />{h.name}</span>
-          <span className="habit-meta">{total > 0 && <>{done} of {total} steps · </>}{meta} <span className="faint">best {best}</span></span>
+        <button type="button" className="habit-name-btn" tabIndex={tab} onClick={onEdit}>
+          <Highlight color={h.color} on={isDone} className="habit-name">{h.name}</Highlight>
+          <span className="habit-meta typed">{total > 0 && <>{done} of {total} steps · </>}{meta}</span>
         </button>
         {total > 0 && (
-          <button type="button" className="icon-btn soft" aria-label={open ? 'Hide steps' : 'Show steps'} aria-expanded={open} onClick={onToggleOpen}>
-            <span className={open ? 'flip' : ''}><Icon name="chevronDown" size={18} stroke={2.4} /></span>
+          <button type="button" className="ink-btn" aria-label={open ? 'Hide steps' : 'Show steps'} aria-expanded={open} tabIndex={tab} onClick={onToggleOpen}>
+            <span className={open ? 'flip' : ''}><Icon name="chevronDown" size={18} stroke={2.2} /></span>
           </button>
         )}
       </div>
-      {total > 0 && open && <SubtaskList habit={h} scorer={scorer} date={date} today={today} />}
-    </div>
+      {total > 0 && open && <SubtaskList habit={h} scorer={scorer} date={date} tab={tab} />}
+    </li>
   );
 }
 
-function SubtaskList({ habit: h, scorer, date }: { habit: Habit; scorer: Scorer; date: ISODate; today: ISODate }) {
+function SubtaskList({ habit: h, scorer, date, tab }: { habit: Habit; scorer: Scorer; date: ISODate; tab?: number }) {
   return (
     <ul className="subtasks">
       {scorer.activeSubtasks(h.id, date).map((s) => {
         const on = scorer.isChecked(h.id, s.id, date);
         return (
           <li key={s.id}>
-            <CheckButton small checked={on} label={`${on ? 'Uncheck' : 'Check'} ${s.name}`} onClick={() => toggleCheck(h.id, s.id, date)} />
-            <span className={on ? 'sub-name done' : 'sub-name'}>{s.name}</span>
+            <span className="twig" aria-hidden="true">↳</span>
+            <button type="button" className="check-btn small" aria-pressed={on} aria-label={`${on ? 'Uncheck' : 'Check'} ${s.name}`}
+              tabIndex={tab} onClick={() => toggleCheck(h.id, s.id, date)}>
+              <HandBox checked={on} small />
+            </button>
+            <Highlight color={h.color} on={on} className="sub-name typed">{s.name}</Highlight>
           </li>
         );
       })}
@@ -197,19 +251,16 @@ function SubtaskList({ habit: h, scorer, date }: { habit: Habit; scorer: Scorer;
   );
 }
 
-function SubtaskBlock({ habit, scorer, date, today, open, onToggleOpen, status }: {
-  habit: Habit; scorer: Scorer; date: ISODate; today: ISODate; open: boolean; onToggleOpen: () => void; status: ReactNode;
+function SubtaskBlock({ habit, scorer, date, open, tab, onToggleOpen }: {
+  habit: Habit; scorer: Scorer; date: ISODate; open: boolean; tab?: number; onToggleOpen: () => void;
 }) {
   const { done, total } = scorer.subtaskProgress(habit, date);
   return (
     <>
-      <div className="weekly-bottom">
-        {status}
-        <button type="button" className="pill" aria-expanded={open} onClick={onToggleOpen}>
-          {done}/{total} steps <span className={open ? 'flip' : ''}><Icon name="chevronDown" size={15} stroke={2.6} /></span>
-        </button>
-      </div>
-      {open && <SubtaskList habit={habit} scorer={scorer} date={date} today={today} />}
+      <button type="button" className="stamp" aria-expanded={open} tabIndex={tab} onClick={onToggleOpen}>
+        {done}/{total} steps <span className={open ? 'flip' : ''}><Icon name="chevronDown" size={15} stroke={2.4} /></span>
+      </button>
+      {open && <SubtaskList habit={habit} scorer={scorer} date={date} tab={tab} />}
     </>
   );
 }

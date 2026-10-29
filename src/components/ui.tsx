@@ -1,36 +1,48 @@
-import { useEffect, useRef, type ReactNode } from 'react';
+import { useEffect, useRef, type CSSProperties, type ReactNode } from 'react';
 
+/** Habit colours are highlighter inks. */
 export const COLORS = [
-  { name: 'Green', hex: '#0E7A5F' },
-  { name: 'Blue', hex: '#2F5BD3' },
-  { name: 'Orange', hex: '#C2410C' },
-  { name: 'Purple', hex: '#7A3FC4' },
-  { name: 'Pink', hex: '#C2306E' },
-  { name: 'Slate', hex: '#4B5563' },
+  { name: 'Yellow', hex: '#FFE45C' },
+  { name: 'Pink', hex: '#FF9BCB' },
+  { name: 'Mint', hex: '#8EE6BE' },
+  { name: 'Blue', hex: '#9BD4FF' },
+  { name: 'Orange', hex: '#FFBE7A' },
+  { name: 'Lavender', hex: '#C9B2FF' },
 ];
 
-type IconName = 'check' | 'plus' | 'minus' | 'flame' | 'chevronDown' | 'chevronLeft' | 'chevronRight'
+/** Colours saved before the journal redesign, mapped to their closest highlighter. */
+const LEGACY: Record<string, string> = {
+  '#0E7A5F': '#8EE6BE',
+  '#2F5BD3': '#9BD4FF',
+  '#C2410C': '#FFBE7A',
+  '#7A3FC4': '#C9B2FF',
+  '#C2306E': '#FF9BCB',
+  '#4B5563': '#FFE45C',
+};
+export const highlighter = (color: string) => LEGACY[color.toUpperCase()] ?? color;
+
+type IconName = 'check' | 'plus' | 'minus' | 'chevronDown' | 'chevronLeft' | 'chevronRight'
   | 'today' | 'week' | 'summary' | 'settings' | 'close' | 'up' | 'down' | 'arrowRight';
 
+// Slightly wobbly strokes so icons look drawn with a pen rather than a ruler.
 const PATHS: Record<IconName, ReactNode> = {
-  check: <path d="M5 12.5l4.5 4.5L19 7.5" />,
-  plus: <path d="M12 5v14M5 12h14" />,
-  minus: <path d="M5 12h14" />,
-  flame: <path d="M12 3c1 3.5 5 5.5 5 10a5 5 0 0 1-10 0c0-2.5 1.5-4 2.5-5 .3 1.6 1.2 2.5 2.5 3 0-3-1-5.5 0-8z" />,
-  chevronDown: <path d="M6 9l6 6 6-6" />,
-  chevronLeft: <path d="M15 6l-6 6 6 6" />,
-  chevronRight: <path d="M9 6l6 6-6 6" />,
-  today: <><circle cx="12" cy="12" r="9" /><path d="M8 12.5l3 3 5-6" /></>,
-  week: <><rect x="3" y="4" width="18" height="17" rx="3" /><path d="M3 10h18M9 4v17M15 4v17" /></>,
-  summary: <path d="M5 20V11M12 20V5M19 20v-6" />,
-  settings: <><circle cx="12" cy="12" r="3" /><path d="M19.4 15a1.7 1.7 0 0 0 .3 1.8l.1.1a2 2 0 1 1-2.8 2.8l-.1-.1a1.7 1.7 0 0 0-1.8-.3 1.7 1.7 0 0 0-1 1.5V21a2 2 0 1 1-4 0v-.1a1.7 1.7 0 0 0-1.1-1.5 1.7 1.7 0 0 0-1.8.3l-.1.1a2 2 0 1 1-2.8-2.8l.1-.1a1.7 1.7 0 0 0 .3-1.8 1.7 1.7 0 0 0-1.5-1H3a2 2 0 1 1 0-4h.1a1.7 1.7 0 0 0 1.5-1.1 1.7 1.7 0 0 0-.3-1.8l-.1-.1a2 2 0 1 1 2.8-2.8l.1.1a1.7 1.7 0 0 0 1.8.3H9a1.7 1.7 0 0 0 1-1.5V3a2 2 0 1 1 4 0v.1a1.7 1.7 0 0 0 1 1.5 1.7 1.7 0 0 0 1.8-.3l.1-.1a2 2 0 1 1 2.8 2.8l-.1.1a1.7 1.7 0 0 0-.3 1.8V9a1.7 1.7 0 0 0 1.5 1H21a2 2 0 1 1 0 4h-.1a1.7 1.7 0 0 0-1.5 1z" /></>,
-  close: <path d="M6 6l12 12M18 6L6 18" />,
-  up: <path d="M6 15l6-6 6 6" />,
-  down: <path d="M6 9l6 6 6-6" />,
-  arrowRight: <path d="M5 12h14M13 6l6 6-6 6" />,
+  check: <path d="M5 12.8c1.6 1.2 3 2.7 4.2 4.4C11.8 12.4 15 8.6 19.4 6" />,
+  plus: <path d="M12.2 5.2c-.3 4.6-.1 9 .1 13.6M5.2 12.3c4.6-.4 9.1-.2 13.6.1" />,
+  minus: <path d="M5.2 12.3c4.6-.4 9.1-.2 13.6.1" />,
+  chevronDown: <path d="M6 9.4c2.2 1.7 4.1 3.6 6 5.6 1.8-2.1 3.7-4 6-5.8" />,
+  chevronLeft: <path d="M15 5.8c-2 2.1-4 4-6 6.3 2 1.8 4 3.8 5.8 6" />,
+  chevronRight: <path d="M9 5.8c2 2.1 4 4 6 6.3-2 1.8-4 3.8-5.8 6" />,
+  today: <><path d="M4.5 6.2c4.9-.6 10-.4 15 0 .4 4.6.3 9 0 13.6-5 .4-10 .3-15 0-.3-4.6-.3-9 0-13.6z" /><path d="M8.2 3.6v4M15.8 3.6v4M8.6 13.4c1 .8 1.8 1.8 2.5 2.8 1.6-2.6 3-4.4 5-5.8" /></>,
+  week: <><path d="M3.6 5c5.6-.5 11.2-.4 16.8 0 .4 4.8.3 9.6 0 14.6-5.6.4-11.2.3-16.8 0-.4-4.9-.3-9.8 0-14.6z" /><path d="M3.8 10.2c5.4-.3 10.8-.2 16.4 0M9.2 5.2c-.2 4.8-.1 9.6.1 14.2M14.8 5.2c.2 4.8.1 9.6-.1 14.2" /></>,
+  summary: <path d="M5.2 20c-.2-3-.1-6 .1-9M12 20.2c-.3-5-.2-10 .1-15M18.8 20c-.2-2.2-.1-4.2.1-6.2M3.4 20.4c5.8-.4 11.4-.3 17.2 0" />,
+  settings: <><path d="M4 7.2c5.4-.3 10.6-.2 16 .1M4 16.8c5.4-.3 10.6-.2 16 .1" /><circle cx="9" cy="7.2" r="2.3" fill="var(--paper)" /><circle cx="15.2" cy="16.9" r="2.3" fill="var(--paper)" /></>,
+  close: <path d="M6.2 6c4 3.8 7.8 7.8 11.6 12M18 6.2c-4 3.8-8 7.6-11.8 11.6" />,
+  up: <path d="M6 15c2.2-1.8 4-3.7 6-5.8 1.8 2 3.8 4 6 5.6" />,
+  down: <path d="M6 9.4c2.2 1.7 4.1 3.6 6 5.6 1.8-2.1 3.7-4 6-5.8" />,
+  arrowRight: <path d="M4.8 12.3c4.6-.4 9.2-.2 14 .1M13.4 6.4c2 2 4 3.9 5.6 5.9-1.8 2-3.6 3.8-5.8 5.6" />,
 };
 
-export function Icon({ name, size = 20, stroke = 2.2 }: { name: IconName; size?: number; stroke?: number }) {
+export function Icon({ name, size = 20, stroke = 2 }: { name: IconName; size?: number; stroke?: number }) {
   return (
     <svg width={size} height={size} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={stroke}
       strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
@@ -39,23 +51,47 @@ export function Icon({ name, size = 20, stroke = 2.2 }: { name: IconName; size?:
   );
 }
 
-const C = 2 * Math.PI * 15;
-
-/** Progress ring, 0–1. `null` draws only the track. */
-export function Ring({ value, size = 36, stroke = 3.5, full = false, children }: {
-  value: number | null; size?: number; stroke?: number; full?: boolean; children?: ReactNode;
-}) {
+/** A little doodled flame for streaks. */
+export function Flame({ size = 15 }: { size?: number }) {
   return (
-    <span className="ring" style={{ width: size, height: size }}>
+    <svg width={size} height={size} viewBox="0 0 24 24" fill="none" aria-hidden="true" className="flame">
+      <path d="M12.4 2.6c.6 3.8 5.6 6 5.4 11.2-.2 4.2-3 6.8-6 6.6-3.2-.2-5.6-2.8-5.4-6 .1-2.6 1.6-4.2 2.8-5.2.2 1.8 1 2.8 2.2 3.4.4-3.4-.6-6.2 1-10z"
+        fill="var(--flame-fill)" stroke="var(--flame)" strokeWidth="1.8" strokeLinejoin="round" />
+    </svg>
+  );
+}
+
+// A hand-drawn circle, used for the day rings. pathLength=100 makes the dash maths a percentage.
+const WOBBLY_CIRCLE = 'M18 3.4C26.6 3.1 33 9.7 32.7 18.3 32.4 26.8 25.9 32.9 17.6 32.7 9.3 32.5 3.3 26.3 3.4 18 3.6 10.1 9.6 3.9 18.8 3.7';
+
+/** Doodled progress ring, 0–1. `null` draws only a faint dotted outline. */
+export function Ring({ value, size = 38, children }: { value: number | null; size?: number; children?: ReactNode }) {
+  const full = value !== null && value >= 1;
+  return (
+    <span className={`ring${full ? ' full' : ''}`} style={{ width: size, height: size }}>
       <svg width={size} height={size} viewBox="0 0 36 36" aria-hidden="true">
-        <circle cx="18" cy="18" r="15" fill={full ? 'var(--accent)' : 'none'} stroke="var(--track)" strokeWidth={stroke} />
+        <path d={WOBBLY_CIRCLE} pathLength={100} fill="none" stroke="var(--ink-faint)" strokeWidth="1.4" strokeDasharray="1.5 3.5" strokeLinecap="round" />
         {value !== null && value > 0 && (
-          <circle cx="18" cy="18" r="15" fill="none" stroke={value >= 1 ? 'var(--accent)' : 'var(--accent-soft)'}
-            strokeWidth={stroke} strokeLinecap="round" strokeDasharray={`${value * C} ${C}`} transform="rotate(-90 18 18)" />
+          <path d={WOBBLY_CIRCLE} pathLength={100} fill="none" stroke="var(--pen)" strokeWidth="2.4" strokeLinecap="round"
+            strokeDasharray={`${Math.min(value, 1) * 100} 100`} />
         )}
       </svg>
       {children !== undefined && <span className="ring-label">{children}</span>}
     </span>
+  );
+}
+
+const BOX = 'M3.6 4.3C8.2 3.5 13.9 3.9 19.3 3.7c.4 5.2.2 10.4.5 15.6-5.6.5-11 .2-16 .5-.4-5.2.1-10.3-.2-15.5z';
+const TICK = 'M6.4 12.2c1.7 1.4 3 3.1 4 4.9 2.6-5.2 6-9.6 10.6-13.4';
+
+/** A hand-drawn checkbox with an inked tick. */
+export function HandBox({ checked, small = false }: { checked: boolean; small?: boolean }) {
+  const size = small ? 20 : 26;
+  return (
+    <svg width={size} height={size} viewBox="0 0 24 24" fill="none" aria-hidden="true" className={`handbox${checked ? ' on' : ''}`}>
+      <path d={BOX} stroke="var(--ink)" strokeWidth={small ? 1.6 : 1.8} strokeLinejoin="round" />
+      {checked && <path className="tick" d={TICK} pathLength={1} stroke="var(--pen)" strokeWidth="2.8" strokeLinecap="round" strokeLinejoin="round" />}
+    </svg>
   );
 }
 
@@ -65,16 +101,25 @@ export function CheckButton({ checked, label, onClick, small = false, disabled =
   return (
     <button type="button" className={`check-btn${small ? ' small' : ''}`} aria-pressed={checked}
       aria-label={label} onClick={onClick} disabled={disabled}>
-      <span className={`check-mark${checked ? ' on' : ''}`}>{checked && <Icon name="check" size={small ? 13 : 16} stroke={3} />}</span>
+      <HandBox checked={checked} small={small} />
     </button>
   );
 }
 
-export function StreakBadge({ text }: { text: string }) {
-  return <span className="streak"><Icon name="flame" size={13} stroke={2.4} />{text}</span>;
+/** Text with a highlighter stroke behind it when `on`. */
+export function Highlight({ color, on, children, className = '' }: { color: string; on: boolean; children: ReactNode; className?: string }) {
+  return (
+    <span className={`hl${on ? ' on' : ''} ${className}`} style={{ '--hl': highlighter(color) } as CSSProperties}>
+      {children}
+    </span>
+  );
 }
 
-/** Modal bottom sheet built on <dialog> for focus trapping and Esc handling. */
+export function StreakBadge({ text }: { text: string }) {
+  return <span className="streak"><Flame size={14} />{text}</span>;
+}
+
+/** Modal index card built on <dialog> for focus trapping and Esc handling. */
 export function Sheet({ title, onClose, children, actions }: {
   title: string; onClose: () => void; children: ReactNode; actions?: ReactNode;
 }) {
@@ -91,7 +136,7 @@ export function Sheet({ title, onClose, children, actions }: {
     <dialog ref={ref} className="sheet" aria-label={title} onCancel={(e) => { e.preventDefault(); onClose(); }}
       onClick={(e) => { if (e.target === ref.current) onClose(); }}>
       <div className="sheet-body">
-        <div className="sheet-handle" />
+        <div className="tape" aria-hidden="true" />
         <header className="sheet-head">
           <button type="button" className="link-btn muted" onClick={onClose}>Cancel</button>
           <h1>{title}</h1>

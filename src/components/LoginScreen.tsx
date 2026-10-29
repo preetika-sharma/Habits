@@ -42,12 +42,16 @@ export function LoginScreen() {
 
   return (
     <div className="login">
-      <div className="login-card card">
-        <img src={`${import.meta.env.BASE_URL}icon.svg`} alt="" width={56} height={56} className="login-logo" />
+      <div className="cover">
+        <div className="cover-label" aria-hidden="true">
+          <span className="script">Habits</span>
+          <span className="typed small">a little journal</span>
+        </div>
+        <div className="login-card">
         {!sentTo ? (
           <form className="form" onSubmit={(e) => { e.preventDefault(); if (email.trim()) void send(email.trim()); }}>
             <div>
-              <h1>Sign in to Habits</h1>
+              <h1 className="script">Open your journal</h1>
               <p className="muted">Your habits sync across all your devices. We'll email you a sign-in link and code. No password needed.</p>
             </div>
             <div className="field">
@@ -58,13 +62,13 @@ export function LoginScreen() {
             </div>
             {error && <p id="login-error" className="error" role="alert">{error}</p>}
             <button type="submit" className="btn primary wide" disabled={busy || !email.trim()}>
-              {busy ? 'Sending…' : 'Email me a sign-in code'}
+              {busy ? 'Sending…' : 'Email me a code'}
             </button>
           </form>
         ) : (
           <form className="form" onSubmit={(e) => { e.preventDefault(); if (code.trim()) void verify(); }}>
             <div>
-              <h1>Check your email</h1>
+              <h1 className="script">Check your email</h1>
               <p className="muted">We sent a sign-in link and code to <strong>{sentTo}</strong>. Click the link, or enter the code here.</p>
             </div>
             <div className="field">
@@ -87,6 +91,7 @@ export function LoginScreen() {
             </div>
           </form>
         )}
+        </div>
       </div>
     </div>
   );

@@ -1,7 +1,8 @@
+import type { CSSProperties } from 'react';
 import { addDays, DAY_LETTERS, formatWeekRange, isoWeek, weekDays, weekStartOf } from '../lib/dates';
 import { isActiveOn, type Scorer } from '../lib/scoring';
 import type { AppData, Habit, ISODate } from '../lib/types';
-import { Icon, plural } from './ui';
+import { Flame, Highlight, Icon, highlighter, plural } from './ui';
 
 interface Props {
   data: AppData;
@@ -39,92 +40,94 @@ export function SummaryView({ data, scorer, today, weekStart, onWeek, onDone }: 
     .sort((a, b) => b.current - a.current);
 
   return (
-    <div className="view">
-      <header className="view-head">
-        <div>
-          <div className="eyebrow">Week {isoWeek(weekStart)} · {formatWeekRange(weekStart)}</div>
-          <h1>{inProgress ? 'Week so far' : 'Week recap'}</h1>
-        </div>
-        <div className="head-actions">
-          <button type="button" className="icon-btn outline" aria-label="Previous week" disabled={weekStart <= firstWeek}
-            onClick={() => onWeek(addDays(weekStart, -7))}><Icon name="chevronLeft" size={18} stroke={2.4} /></button>
-          <button type="button" className="icon-btn outline" aria-label="Next week" disabled={inProgress}
-            onClick={() => onWeek(addDays(weekStart, 7))}><Icon name="chevronRight" size={18} stroke={2.4} /></button>
-        </div>
-      </header>
-
-      <div className="hero card dark">
-        <div className="stat-pair">
-          <div className="stat"><span className="label">Days hit</span><strong>{daysHit}<small> / 7</small></strong></div>
-          <div className="stat"><span className="label">Weekly targets</span><strong>{targetsHit}<small> / {weekly.length}</small></strong></div>
-        </div>
-        <div className="bars" role="img" aria-label="Daily score by day">
-          {days.map((d, i) => {
-            const s = d <= today ? scorer.dailyScore(d) : null;
-            return (
-              <div key={d} className="bar-col">
-                <span className="bar-pct">{s === null ? '–' : `${Math.round(s * 100)}%`}</span>
-                <span className={`bar${scorer.dayHit(d) ? ' hit' : ''}`} style={{ height: `${Math.max(s ?? 0, 0.04) * 58}px` }} />
-                <span className="bar-day">{DAY_LETTERS[i]}</span>
-              </div>
-            );
-          })}
-        </div>
-        <p className="hero-note">A day counts as hit at {data.settings.dailyThreshold}% of daily habits done.</p>
-      </div>
-
-      {best && worst && (
-        <div className="stat-pair">
-          <div className="card highlight">
-            <span className="label good">Most consistent</span>
-            <strong>{best.h.name}</strong>
-            <span className="muted">{best.done} of {plural(best.due, 'day')}</span>
+    <div className="spread">
+      <article className="journal-page">
+        <header className="page-head">
+          <button type="button" className="flip-btn" aria-label="Previous week" disabled={weekStart <= firstWeek}
+            onClick={() => onWeek(addDays(weekStart, -7))}><Icon name="chevronLeft" size={22} stroke={2.2} /></button>
+          <div className="page-date">
+            <h1 className="script">{inProgress ? 'Week so far' : 'Week in review'}</h1>
+            <div className="typed small">week {isoWeek(weekStart)} · {formatWeekRange(weekStart)}</div>
           </div>
-          <div className="card highlight">
-            <span className="label warn">Most missed</span>
-            {worst.rate < 1 ? (
-              <><strong>{worst.h.name}</strong><span className="muted">{worst.done} of {plural(worst.due, 'day')}</span></>
-            ) : (
-              <><strong>Nothing missed</strong><span className="muted">Every daily habit done</span></>
-            )}
-          </div>
-        </div>
-      )}
+          <button type="button" className="flip-btn" aria-label="Next week" disabled={inProgress}
+            onClick={() => onWeek(addDays(weekStart, 7))}><Icon name="chevronRight" size={22} stroke={2.2} /></button>
+        </header>
 
-      {habits.length > 0 && (
-        <div className="card heat">
-          <h2>Habits × days</h2>
-          <div className="heat-row head">
-            <span />{DAY_LETTERS.map((l, i) => <span key={i}>{l}</span>)}<span />
-          </div>
-          {[...daily, ...weekly].map((h, idx) => (
-            <HeatRow key={h.id} habit={h} days={days} today={today} scorer={scorer} weekStart={weekStart}
-              divider={idx === daily.length && daily.length > 0} />
-          ))}
+        <div className="scoreboard">
+          <div><span className="script big">{daysHit}<small>/7</small></span><span className="typed small">days hit</span></div>
+          <div><span className="script big">{targetsHit}<small>/{weekly.length}</small></span><span className="typed small">targets hit</span></div>
         </div>
-      )}
 
-      {streaks.length > 0 && (
-        <div className="card streak-list">
-          <h2>Current streaks</h2>
-          <ul>
-            {streaks.map(({ h, current: c, best: b, unit }) => (
-              <li key={h.id}>
-                <span className="flame-tile"><Icon name="flame" size={16} /></span>
-                <span className="grow">
-                  <strong>{h.name}</strong>
-                  <span className="muted">{h.type === 'daily' ? 'Daily' : 'Weekly'} · best {plural(b, unit)}</span>
-                </span>
-                <strong className="streak-num">{plural(c, unit)}</strong>
+        <section className="section">
+          <h2 className="script underline">How each day went</h2>
+          <div className="bars" role="img" aria-label="Daily score by day">
+            {days.map((d, i) => {
+              const s = d <= today ? scorer.dailyScore(d) : null;
+              return (
+                <div key={d} className="bar-col">
+                  <span className="bar-pct script">{s === null ? '' : `${Math.round(s * 100)}`}</span>
+                  <span className={`bar${scorer.dayHit(d) ? ' hit' : ''}`} style={{ height: `${Math.max(s ?? 0, 0.03) * 90}px` }} />
+                  <span className="bar-day typed">{DAY_LETTERS[i]}</span>
+                </div>
+              );
+            })}
+          </div>
+          <p className="typed small faint">A day counts as hit at {data.settings.dailyThreshold}% of daily habits done.</p>
+        </section>
+
+        {best && worst && (
+          <section className="section">
+            <h2 className="script underline">Notes to self</h2>
+            <ul className="notes-list typed">
+              <li>★ Most consistent: <Highlight color={best.h.color} on>{best.h.name}</Highlight> ({best.done} of {plural(best.due, 'day')})</li>
+              <li>
+                ✎ {worst.rate < 1
+                  ? <>Most missed: <strong>{worst.h.name}</strong> ({worst.done} of {plural(worst.due, 'day')})</>
+                  : <>Nothing missed. Every daily habit done!</>}
               </li>
-            ))}
-          </ul>
-        </div>
-      )}
+            </ul>
+          </section>
+        )}
+      </article>
 
-      <button type="button" className="btn primary wide" onClick={onDone}>
-        {weekStart < current ? `Go to week ${isoWeek(current)}` : 'Back to today'}<Icon name="arrowRight" size={18} stroke={2.4} />
-      </button>
+      <article className="journal-page">
+        {habits.length > 0 && (
+          <section className="section">
+            <h2 className="script underline">Habits × days</h2>
+            <div className="heat">
+              <div className="heat-row head typed">
+                <span />{DAY_LETTERS.map((l, i) => <span key={i}>{l}</span>)}<span />
+              </div>
+              {[...daily, ...weekly].map((h, idx) => (
+                <HeatRow key={h.id} habit={h} days={days} today={today} scorer={scorer} weekStart={weekStart}
+                  divider={idx === daily.length && daily.length > 0} />
+              ))}
+            </div>
+          </section>
+        )}
+
+        {streaks.length > 0 && (
+          <section className="section">
+            <h2 className="script underline">Streaks</h2>
+            <ul className="streak-list">
+              {streaks.map(({ h, current: c, best: b, unit }) => (
+                <li key={h.id}>
+                  <Flame size={20} />
+                  <span className="grow">
+                    <span className="typed">{h.name}</span>
+                    <span className="typed small faint">{h.type === 'daily' ? 'daily' : 'weekly'} · best {plural(b, unit)}</span>
+                  </span>
+                  <span className="script streak-num">{plural(c, unit)}</span>
+                </li>
+              ))}
+            </ul>
+          </section>
+        )}
+
+        <button type="button" className="btn primary wide" onClick={onDone}>
+          {weekStart < current ? `On to week ${isoWeek(current)}` : 'Back to today'}<Icon name="arrowRight" size={18} stroke={2.4} />
+        </button>
+      </article>
     </div>
   );
 }
@@ -138,14 +141,14 @@ function HeatRow({ habit: h, days, today, scorer, weekStart, divider }: {
   const target = daily ? due.length : scorer.targetFor(h.id, weekStart);
   const hit = done >= target;
   return (
-    <div className={`heat-row${divider ? ' divider' : ''}`}>
-      <span className="grid-name">{h.name}</span>
+    <div className={`heat-row${divider ? ' divider' : ''}`} style={{ '--hl': highlighter(h.color) } as CSSProperties}>
+      <span className="grid-name typed">{h.name}</span>
       {days.map((d) => {
         const active = isActiveOn(h, d) && d <= today;
         const on = active && scorer.isDone(h, d);
-        return <span key={d} className={`heat-cell${daily ? '' : ' round'}${on ? ' on' : ''}${active ? '' : ' off'}`} />;
+        return <span key={d} className={`heat-cell${on ? ' on' : ''}${active ? '' : ' off'}`} />;
       })}
-      <span className={`heat-score${hit ? ' hit' : daily ? '' : ' warn'}`}>{done}/{target}</span>
+      <span className={`heat-score script${hit ? ' hit' : daily ? '' : ' warn'}`}>{done}/{target}</span>
     </div>
   );
 }

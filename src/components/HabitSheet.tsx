@@ -3,8 +3,7 @@ import { archiveHabit, createHabit, deleteHabit, moveHabit, updateHabit, type Ha
 import { weekStartOf } from '../lib/dates';
 import type { Scorer } from '../lib/scoring';
 import type { AppData, HabitType, ISODate } from '../lib/types';
-import { COLORS, Icon } from './ui';
-import { Sheet } from './ui';
+import { COLORS, HandBox, Highlight, Icon, Sheet, highlighter } from './ui';
 
 interface Props {
   data: AppData;
@@ -18,7 +17,7 @@ export function HabitSheet({ data, scorer, today, habitId, onClose }: Props) {
   const existing = habitId ? data.habits.find((h) => h.id === habitId) : undefined;
   const [type, setType] = useState<HabitType>(existing?.type ?? 'daily');
   const [name, setName] = useState(existing?.name ?? '');
-  const [color, setColor] = useState(existing?.color ?? COLORS[0].hex);
+  const [color, setColor] = useState(existing ? highlighter(existing.color) : COLORS[0].hex);
   const [target, setTarget] = useState(existing ? scorer.targetFor(existing.id, weekStartOf(today)) : 3);
   const [subs, setSubs] = useState<{ id?: string; name: string }[]>(
     existing ? scorer.activeSubtasks(existing.id, today).map((s) => ({ id: s.id, name: s.name })) : [],
@@ -110,7 +109,7 @@ export function HabitSheet({ data, scorer, today, habitId, onClose }: Props) {
           <div className="swatches">
             {COLORS.map((c) => (
               <button key={c.hex} type="button" className={`swatch${color === c.hex ? ' on' : ''}`} aria-label={c.name}
-                aria-pressed={color === c.hex} style={{ borderColor: color === c.hex ? c.hex : 'transparent' }} onClick={() => setColor(c.hex)}>
+                aria-pressed={color === c.hex} onClick={() => setColor(c.hex)}>
                 <span style={{ background: c.hex }} />
               </button>
             ))}
@@ -141,9 +140,9 @@ export function HabitSheet({ data, scorer, today, habitId, onClose }: Props) {
         <div className="field">
           <span className="label-text">Preview</span>
           <div className="card preview">
-            <span className="dot lg" style={{ background: color }} />
+            <HandBox checked />
             <span className="grow">
-              <strong>{name.trim() || 'Untitled habit'}</strong>
+              <Highlight color={color} on className="habit-name">{name.trim() || 'Untitled habit'}</Highlight>
               <span className="muted">{daily ? 'Every day' : `${target}× a week`} · {stepsText}</span>
             </span>
           </div>
