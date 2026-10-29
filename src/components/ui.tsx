@@ -72,7 +72,7 @@ export function Ring({ value, size = 38, children }: { value: number | null; siz
       <svg width={size} height={size} viewBox="0 0 36 36" aria-hidden="true">
         <path d={WOBBLY_CIRCLE} pathLength={100} fill="none" stroke="var(--ink-faint)" strokeWidth="1.4" strokeDasharray="1.5 3.5" strokeLinecap="round" />
         {value !== null && value > 0 && (
-          <path d={WOBBLY_CIRCLE} pathLength={100} fill="none" stroke="var(--pen)" strokeWidth="2.4" strokeLinecap="round"
+          <path d={WOBBLY_CIRCLE} pathLength={100} fill="none" stroke="var(--tick)" strokeWidth="2.4" strokeLinecap="round"
             strokeDasharray={`${Math.min(value, 1) * 100} 100`} />
         )}
       </svg>
@@ -90,7 +90,7 @@ export function HandBox({ checked, small = false }: { checked: boolean; small?: 
   return (
     <svg width={size} height={size} viewBox="0 0 24 24" fill="none" aria-hidden="true" className={`handbox${checked ? ' on' : ''}`}>
       <path d={BOX} stroke="var(--box)" strokeWidth={small ? 1.3 : 1.5} strokeLinejoin="round" />
-      {checked && <path className="tick" d={TICK} pathLength={1} stroke="var(--ink)" strokeWidth="2.6" strokeLinecap="round" strokeLinejoin="round" />}
+      {checked && <path className="tick" d={TICK} pathLength={1} stroke="var(--tick)" strokeWidth="2.6" strokeLinecap="round" strokeLinejoin="round" />}
     </svg>
   );
 }

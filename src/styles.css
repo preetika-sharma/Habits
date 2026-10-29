@@ -19,6 +19,8 @@
   /* The one soft accent. */
   --accent: #7E9A88;
   --accent-wash: #E3ECE5;
+  /* Forest-green ink for ticks and the day progress rings. */
+  --tick: #3F6E52;
   --flame: #1A1A1A;
   --flame-fill: var(--accent-wash);
   --danger: #A12A1F;
@@ -45,6 +47,7 @@
     --pen-ink: #111111;
     --accent: #A9C4B2;
     --accent-wash: #2A3A30;
+    --tick: #8FC4A3;
     --flame: #F2F2F0;
     --danger: #FF8A7E;
     --card: #1E1E1E;
