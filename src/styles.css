@@ -8,7 +8,7 @@
   --desk: #ECECEA;
   --paper: #FFFFFF;
   --paper-edge: #E3E3E0;
-  --dot: rgba(0, 0, 0, 0.2);
+  --dot: rgba(0, 0, 0, 0.09);
   --ink: #1A1A1A;
   --ink-soft: #4F4F4F;
   --ink-faint: #8A8A8A;
@@ -35,7 +35,7 @@
     --desk: #0E0E0E;
     --paper: #171717;
     --paper-edge: #0A0A0A;
-    --dot: rgba(255, 255, 255, 0.18);
+    --dot: rgba(255, 255, 255, 0.08);
     --ink: #F2F2F0;
     --ink-soft: #C4C4C0;
     --ink-faint: #8E8E8A;
