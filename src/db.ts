@@ -2,6 +2,7 @@ import Dexie, { type Table } from 'dexie';
 import { weekStartOf } from './lib/dates';
 import { moveInOrder, repairOrder } from './lib/order';
 import type { Kind, OutboxEntry } from './lib/sync';
+import type { TemplateHabit } from './lib/template';
 import {
   checkInId, DEFAULT_SETTINGS,
   type AppData, type CheckIn, type Habit, type HabitType, type ISODate, type Settings, type Subtask, type TargetHistory,
@@ -162,6 +163,22 @@ export async function deleteHabit(id: string): Promise<void> {
     for (const kind of ['subtasks', 'targets', 'checkIns'] as const) {
       const ids = await (db[kind] as Table<{ id: string; habitId: string }, string>).where('habitId').equals(id).primaryKeys();
       for (const k of ids) await remove(kind, k);
+    }
+  });
+}
+
+/** Adds the default list's habits after any existing ones, in the list's order. */
+export async function addTemplateHabits(list: TemplateHabit[], today: ISODate): Promise<void> {
+  for (const h of list) {
+    await createHabit({ name: h.name, color: '#FFE45C', type: h.type, target: h.target, subtasks: h.steps.map((name) => ({ name })) }, today);
+  }
+}
+
+/** Deletes every habit and all check-in history (on every device, via sync). Settings are kept. */
+export async function deleteAllHabits(): Promise<void> {
+  await mutate(async () => {
+    for (const kind of ['checkIns', 'targets', 'subtasks', 'habits'] as const) {
+      for (const id of await dataTable(kind).toCollection().primaryKeys()) await remove(kind, id);
     }
   });
 }

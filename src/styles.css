@@ -438,3 +438,23 @@ code { font-size: 0.92em; background: var(--accent-wash); padding: 1px 5px; bord
 
 /* Text under each habit: ink, with "best" one step softer (still well above 4.5:1). */
 .habit-meta .faint { color: var(--ink-soft); }
+
+/* ---------- Onboarding ---------- */
+.onboarding { max-width: 480px; gap: 18px; }
+.onboarding > p { line-height: 1.6; }
+.choice { display: flex; flex-direction: column; gap: 8px; padding: 14px; border: 1.2px solid var(--ink); border-radius: 2px; background: var(--paper); }
+.choice h2 { font-size: 15px; font-weight: 700; letter-spacing: 0.16em; text-transform: lowercase; }
+.choice-list { list-style: none; margin: 0; padding: 0; border-top: 1px solid var(--rule); }
+.choice-list li { display: flex; align-items: flex-start; gap: 8px; padding: 7px 0; border-bottom: 1px solid var(--rule); }
+.choice-list li svg { flex: none; margin-top: 1px; }
+.choice-list strong { font-size: 14.5px; }
+
+/* ---------- Default-list editor ---------- */
+.template-item { flex-direction: column; align-items: stretch !important; }
+.template-row { display: flex; align-items: center; gap: 2px; min-height: 52px; }
+.template-fields { display: flex; flex-direction: column; gap: 14px; padding: 4px 0 14px; }
+.field textarea {
+  border: 1.3px solid var(--ink); border-radius: 2px; background: transparent; padding: 8px 10px;
+  font: inherit; font-size: 15px; color: var(--ink); resize: vertical; line-height: 1.5;
+}
+.field textarea:focus-visible { outline: none; border-width: 2px; background: var(--accent-wash); }

@@ -2,19 +2,25 @@ import { useEffect, useState } from 'react';
 import { isAuthRetryableFetchError, type Session } from '@supabase/supabase-js';
 import App from './App';
 import { LoginScreen, SetupNeeded } from './components/LoginScreen';
+import { OnboardingScreen } from './components/OnboardingScreen';
 import { clearLocal } from './db';
 import { supabase } from './supabase';
 import { syncEngine } from './sync';
+import { checkIsAdmin } from './template';
 
 export interface Account {
   id: string;
   email: string;
+  /** May edit the default habit list. */
+  isAdmin: boolean;
   signOut: () => Promise<void>;
 }
 
-type User = { id: string; email: string };
+type User = { id: string; email: string; onboarded: boolean };
 
-const fromSession = (s: Session | null): User | null => (s ? { id: s.user.id, email: s.user.email ?? '' } : null);
+type RawUser = { id: string; email?: string; user_metadata?: { onboarded?: unknown } };
+const toUser = (u: RawUser): User => ({ id: u.id, email: u.email ?? '', onboarded: u.user_metadata?.onboarded === true });
+const fromSession = (s: Session | null): User | null => (s ? toUser(s.user) : null);
 
 /**
  * The session supabase-js saved last time. Used when the app starts offline with an
@@ -27,7 +33,7 @@ function storedUser(): User | null {
       const k = localStorage.key(i)!;
       if (k.startsWith('sb-') && k.endsWith('-auth-token')) {
         const u = JSON.parse(localStorage.getItem(k)!)?.user;
-        if (u?.id) return { id: u.id, email: u.email ?? '' };
+        if (u?.id) return toUser(u);
       }
     }
   } catch { /* storage unavailable */ }
@@ -37,6 +43,7 @@ function storedUser(): User | null {
 export function AuthGate() {
   const [user, setUser] = useState<User | null | undefined>(undefined);
   const [readyFor, setReadyFor] = useState<string | null>(null);
+  const [isAdmin, setIsAdmin] = useState(false);
 
   useEffect(() => {
     if (!supabase) return;
@@ -57,12 +64,16 @@ export function AuthGate() {
     if (!userId) return;
     let live = true;
     syncEngine.start(userId).then(() => { if (live) setReadyFor(userId); }, () => { if (live) setReadyFor(userId); });
-    return () => { live = false; syncEngine.stop(); };
+    checkIsAdmin(userId).then((a) => { if (live) setIsAdmin(a); });
+    return () => { live = false; syncEngine.stop(); setIsAdmin(false); };
   }, [userId]);
 
   if (!supabase) return <SetupNeeded />;
   if (user === undefined || (user && readyFor !== user.id)) return <div className="app loading" aria-busy="true" />;
   if (!user) return <LoginScreen />;
+
+  // New accounts choose between the default habit list and a blank journal, once.
+  if (!user.onboarded) return <OnboardingScreen onDone={() => setUser({ ...user, onboarded: true })} />;
 
   const signOut = async () => {
     syncEngine.stop();
@@ -71,5 +82,5 @@ export function AuthGate() {
     setReadyFor(null);
   };
 
-  return <App account={{ ...user, signOut }} />;
+  return <App account={{ id: user.id, email: user.email, isAdmin, signOut }} />;
 }

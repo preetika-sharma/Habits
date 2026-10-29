@@ -11,6 +11,7 @@ import { WeekView } from './components/WeekView';
 import { SummaryView } from './components/SummaryView';
 import { HabitSheet } from './components/HabitSheet';
 import { SettingsSheet } from './components/SettingsSheet';
+import { TemplateEditor } from './components/TemplateEditor';
 
 type Tab = 'today' | 'week' | 'summary';
 
@@ -37,6 +38,7 @@ export default function App({ account }: { account: Account }) {
   const [summaryWeek, setSummaryWeek] = useState(addDays(weekStartOf(today), -7));
   const [sheet, setSheet] = useState<{ habitId?: string } | null>(null);
   const [settingsOpen, setSettingsOpen] = useState(false);
+  const [templateOpen, setTemplateOpen] = useState(false);
 
   // When the day rolls over, move the Today view along with it.
   useEffect(() => {
@@ -94,7 +96,13 @@ export default function App({ account }: { account: Account }) {
       </nav>
 
       {sheet && <HabitSheet data={data} scorer={scorer} today={today} habitId={sheet.habitId} onClose={() => setSheet(null)} />}
-      {settingsOpen && <SettingsSheet settings={data.settings} account={account} onClose={() => setSettingsOpen(false)} />}
+      {settingsOpen && (
+        <SettingsSheet settings={data.settings} account={account} onClose={() => setSettingsOpen(false)}
+          onEditTemplate={() => { setSettingsOpen(false); setTemplateOpen(true); }} />
+      )}
+      {templateOpen && account.isAdmin && (
+        <TemplateEditor data={data} scorer={scorer} today={today} userId={account.id} onClose={() => setTemplateOpen(false)} />
+      )}
     </div>
   );
 }

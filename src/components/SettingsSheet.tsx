@@ -1,12 +1,33 @@
 import { useRef, useState } from 'react';
 import type { Account } from '../AuthGate';
-import { exportJSON, importJSON, updateSettings } from '../db';
+import { addTemplateHabits, deleteAllHabits, exportJSON, importJSON, updateSettings } from '../db';
+import { fetchDefaultTemplate } from '../template';
 import { todayISO } from '../lib/dates';
 import type { Settings } from '../lib/types';
 import { syncEngine, useSyncState, type SyncState } from '../sync';
 import { Sheet, plural } from './ui';
 
-export function SettingsSheet({ settings, account, onClose }: { settings: Settings; account: Account; onClose: () => void }) {
+export function SettingsSheet({ settings, account, onClose, onEditTemplate }: {
+  settings: Settings; account: Account; onClose: () => void; onEditTemplate: () => void;
+}) {
+  const [restarting, setRestarting] = useState(false);
+  const [restartMessage, setRestartMessage] = useState('');
+
+  const restart = async () => {
+    if (!confirm('Start over? This deletes all your habits and their history on every device, then loads the default habits. This can\'t be undone.')) return;
+    setRestarting(true);
+    setRestartMessage('');
+    try {
+      // Fetch first: if the list can't be loaded (e.g. offline), nothing gets deleted.
+      const list = await fetchDefaultTemplate();
+      await deleteAllHabits();
+      await addTemplateHabits(list, todayISO());
+      setRestartMessage(list.length ? `Done. You're starting fresh with ${plural(list.length, 'habit')}.` : 'Done. The default list is empty, so your journal is blank.');
+    } catch (e) {
+      setRestartMessage(`Couldn't start over: ${e instanceof Error ? e.message : 'unknown error'}. Nothing was deleted.`);
+    }
+    setRestarting(false);
+  };
   const fileRef = useRef<HTMLInputElement>(null);
   const [message, setMessage] = useState('');
   const [signingOut, setSigningOut] = useState(false);
@@ -89,6 +110,25 @@ export function SettingsSheet({ settings, account, onClose }: { settings: Settin
             onChange={(e) => { const f = e.target.files?.[0]; e.target.value = ''; if (f) void doImport(f); }} />
           {message && <p className="hint tight" role="status">{message}</p>}
         </div>
+
+        <div className="field">
+          <span className="label-text">Start over</span>
+          <p className="hint tight">
+            Deletes all your habits and their history on every device, then loads the latest default habits.
+          </p>
+          <button type="button" className="btn danger" disabled={restarting} onClick={() => void restart()}>
+            {restarting ? 'Starting over…' : 'Start over with default habits'}
+          </button>
+          {restartMessage && <p className="hint tight" role="status">{restartMessage}</p>}
+        </div>
+
+        {account.isAdmin && (
+          <div className="field">
+            <span className="label-text">Default habits (admin)</span>
+            <p className="hint tight">The list new accounts can start with. Only you can see this.</p>
+            <button type="button" className="btn outline" onClick={onEditTemplate}>Edit default habits</button>
+          </div>
+        )}
       </div>
     </Sheet>
   );
