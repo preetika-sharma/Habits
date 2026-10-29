@@ -1,5 +1,6 @@
 import Dexie, { type Table } from 'dexie';
 import { weekStartOf } from './lib/dates';
+import { moveInOrder } from './lib/order';
 import type { Kind, OutboxEntry } from './lib/sync';
 import {
   checkInId, DEFAULT_SETTINGS,
@@ -167,13 +168,11 @@ export async function moveHabit(id: string, direction: -1 | 1, today: ISODate): 
   await mutate(async () => {
     const target = await db.habits.get(id);
     if (!target) return;
-    const list = (await db.habits.orderBy('sortOrder').toArray())
+    const list = (await db.habits.toArray())
       .filter((h) => h.type === target.type && (!h.archivedOn || h.archivedOn > today));
-    const i = list.findIndex((h) => h.id === id);
-    const j = i + direction;
-    if (j < 0 || j >= list.length) return;
-    await put<Habit>('habits', { ...list[i], sortOrder: list[j].sortOrder });
-    await put<Habit>('habits', { ...list[j], sortOrder: list[i].sortOrder });
+    for (const { item, sortOrder } of moveInOrder(list, id, direction) ?? []) {
+      await put<Habit>('habits', { ...item, sortOrder });
+    }
   });
 }
 

@@ -1,6 +1,7 @@
 import type { CSSProperties } from 'react';
 import { addDays, DAY_LETTERS, formatWeekRange, isoWeek, weekDays, weekStartOf } from '../lib/dates';
 import { isActiveOn, type Scorer } from '../lib/scoring';
+import { byOrder } from '../lib/order';
 import type { AppData, Habit, ISODate } from '../lib/types';
 import { Flame, Highlight, Icon, highlighter, plural } from './ui';
 
@@ -18,7 +19,7 @@ export function SummaryView({ data, scorer, today, weekStart, onWeek, onDone }: 
   const current = weekStartOf(today);
   const inProgress = weekStart === current;
   const elapsed = days.filter((d) => d <= today);
-  const habits = data.habits.filter((h) => days.some((d) => isActiveOn(h, d))).sort((a, b) => a.sortOrder - b.sortOrder);
+  const habits = data.habits.filter((h) => days.some((d) => isActiveOn(h, d))).sort(byOrder);
   const daily = habits.filter((h) => h.type === 'daily');
   const weekly = habits.filter((h) => h.type === 'weekly');
   const daysHit = elapsed.filter((d) => scorer.dayHit(d)).length;

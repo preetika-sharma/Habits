@@ -63,6 +63,9 @@ export function HabitSheet({ data, scorer, today, habitId, onClose }: Props) {
 
   const daily = type === 'daily';
   const stepsText = subs.length ? `${subs.length} steps` : 'No steps';
+  // Where this habit sits among the active habits of its type (data is live, so this updates after a move).
+  const siblings = existing ? scorer.habitsOn(today, existing.type) : [];
+  const position = existing ? siblings.findIndex((h) => h.id === existing.id) : -1;
 
   return (
     <Sheet title={existing ? 'Edit habit' : 'New habit'} onClose={onClose}
@@ -138,10 +141,17 @@ export function HabitSheet({ data, scorer, today, habitId, onClose }: Props) {
 
         {existing && (
           <div className="danger-zone">
-            <div className="row">
-              <button type="button" className="btn outline" onClick={() => moveHabit(existing.id, -1, today)}><Icon name="up" size={16} />Move up</button>
-              <button type="button" className="btn outline" onClick={() => moveHabit(existing.id, 1, today)}><Icon name="down" size={16} />Move down</button>
-            </div>
+            {siblings.length > 1 && position >= 0 && (
+              <>
+                <span className="label-text">Position {position + 1} of {siblings.length}</span>
+                <div className="row">
+                  <button type="button" className="btn outline" disabled={position === 0}
+                    onClick={() => moveHabit(existing.id, -1, today)}><Icon name="up" size={16} />Move up</button>
+                  <button type="button" className="btn outline" disabled={position === siblings.length - 1}
+                    onClick={() => moveHabit(existing.id, 1, today)}><Icon name="down" size={16} />Move down</button>
+                </div>
+              </>
+            )}
             <button type="button" className="btn outline" onClick={archive}>Archive habit</button>
             <button type="button" className="btn danger" onClick={remove}>Delete habit and history</button>
           </div>

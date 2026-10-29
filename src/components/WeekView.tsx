@@ -2,6 +2,7 @@ import type { CSSProperties } from 'react';
 import { toggleCheck } from '../db';
 import { addDays, DAY_LETTERS, DAY_SHORT, formatDay, formatWeekRange, isoWeek, weekDays, weekStartOf } from '../lib/dates';
 import { canEdit, isActiveOn, type Scorer } from '../lib/scoring';
+import { byOrder } from '../lib/order';
 import type { AppData, Habit, ISODate } from '../lib/types';
 import { HandBox, Icon, highlighter } from './ui';
 
@@ -20,7 +21,7 @@ export function WeekView({ data, scorer, today, weekStart, onWeek, onOpenDay }: 
   const current = weekStartOf(today);
   const isCurrent = weekStart === current;
   const inWeek = (h: Habit) => days.some((d) => isActiveOn(h, d));
-  const habits = [...data.habits].filter(inWeek).sort((a, b) => a.sortOrder - b.sortOrder);
+  const habits = [...data.habits].filter(inWeek).sort(byOrder);
   const daily = habits.filter((h) => h.type === 'daily');
   const weekly = habits.filter((h) => h.type === 'weekly');
   const daysHit = days.filter((d) => d <= today && scorer.dayHit(d)).length;

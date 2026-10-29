@@ -1,4 +1,5 @@
 import { addDays, weekDays, weekStartOf } from './dates';
+import { byOrder } from './order';
 import { checkInId, type AppData, type Habit, type ISODate, type Subtask } from './types';
 
 /** Anything with an active date range. */
@@ -67,7 +68,7 @@ export class Scorer {
   habitsOn(d: ISODate, type?: Habit['type']): Habit[] {
     return this.data.habits
       .filter((h) => isActiveOn(h, d) && (!type || h.type === type))
-      .sort((a, b) => a.sortOrder - b.sortOrder);
+      .sort(byOrder);
   }
 
   /** Fraction (0–1) of daily habits due on `d` that are done, or null when none are due. */
