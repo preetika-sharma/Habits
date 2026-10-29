@@ -59,6 +59,22 @@ export function AuthGate() {
     return () => data.subscription.unsubscribe();
   }, []);
 
+  // The saved session can be older than the account's "onboarded" flag (e.g. set by the
+  // admin SQL, or on another device). Confirm with the server before showing the choice.
+  const [verifiedFor, setVerifiedFor] = useState<string | null>(null);
+  useEffect(() => {
+    if (!user || user.onboarded || verifiedFor === user.id) return;
+    let live = true;
+    supabase!.auth.getUser().then(({ data, error }) => {
+      if (!live) return;
+      if (data.user) setUser(toUser(data.user));
+      // Offline or unknown: open the app; the choice can be offered next time.
+      else if (error) setUser({ ...user, onboarded: true });
+      setVerifiedFor(user.id);
+    });
+    return () => { live = false; };
+  }, [user, verifiedFor]);
+
   const userId = user?.id;
   useEffect(() => {
     if (!userId) return;
@@ -73,7 +89,10 @@ export function AuthGate() {
   if (!user) return <LoginScreen />;
 
   // New accounts choose between the default habit list and a blank journal, once.
-  if (!user.onboarded) return <OnboardingScreen onDone={() => setUser({ ...user, onboarded: true })} />;
+  if (!user.onboarded) {
+    if (verifiedFor !== user.id) return <div className="app loading" aria-busy="true" />;
+    return <OnboardingScreen onDone={() => setUser({ ...user, onboarded: true })} />;
+  }
 
   const signOut = async () => {
     syncEngine.stop();
